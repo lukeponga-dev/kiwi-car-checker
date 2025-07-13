@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Search, Car, Calendar, Palette, Cog, MapPin, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface VehicleData {
   // Basic Vehicle Information
@@ -94,85 +95,31 @@ export default function VehicleLookup() {
     }
 
     setIsLoading(true);
-    
-    // Simulate API call - in real app, this would call the NZ vehicle API
-    setTimeout(() => {
-      // Mock data for demonstration
-      const mockData: VehicleData = {
-        // Basic Vehicle Information
-        plate: plateNumber.toUpperCase(),
-        make: "Toyota",
-        model: "Camry",
-        variant: "LE",
-        year: 2019,
-        color: "Silver",
-        vin: "1NXBR32E37Z******",
-        chassisNumber: "JTDKB20U597******",
-        countryOfOrigin: "Japan",
-        vehicleType: "Passenger Car",
-        bodyStyle: "Sedan",
-        numberOfDoors: 4,
-        transmission: "Automatic",
-        driveType: "FWD",
+    setVehicleData(null);
 
-        // Engine & Technical Specifications
-        engineSize: "2.5L",
-        fuelType: "Petrol",
-        numberOfCylinders: 4,
-        powerOutput: "131kW / 176HP",
-        torque: "231Nm",
-        emissionStandard: "Euro 6",
-        fuelConsumption: "7.2L/100km",
-        co2Emissions: "164g/km",
-        maxSpeed: "200km/h",
-        grossVehicleMass: "1,800kg",
-        tareWeight: "1,445kg",
+    try {
+      const { data, error } = await supabase.functions.invoke("vehicle-api", {
+        body: { plateNumber },
+      });
 
-        // Registration & Compliance
-        registrationStatus: "Current",
-        registrationExpiry: "2024-08-20",
-        wofStatus: "Current",
-        wofExpiry: "2024-06-15",
-        cofStatus: "N/A",
-        rucStatus: "Exempt",
-        importComplianceDate: "2019-01-15",
-        compliancePlate: "NZ COMPLIANCE PLATE",
+      if (error) {
+        throw error;
+      }
 
-        // Safety & Recalls
-        safetyRating: "5 Star ANCAP",
-        airbagCount: 8,
-        hasABS: true,
-        hasESC: true,
-        activeRecalls: [],
-        theftAlertStatus: "Clear",
-
-        // Ownership & History
-        numberOfOwners: 2,
-        firstRegistrationDate: "2019-02-01",
-        importDate: "2019-01-10",
-        previousCountry: "Japan",
-        lienInformation: "None",
-        lastOdometerReading: "87,450km (2024-02-10)",
-
-        // Insurance & Valuation
-        writeOffStatus: "Clear",
-        marketValuation: "$28,000 - $32,000",
-        replacementCost: "$35,000",
-
-        // Additional Compliance
-        modificationApprovals: [],
-        noiseLevelCompliance: "Compliant",
-        commercialRestrictions: "None"
-      };
-      
-      setVehicleData(mockData);
-      setIsLoading(false);
-      
+      setVehicleData(data);
       toast({
         title: "Vehicle Found",
-        description: `Details retrieved for ${mockData.year} ${mockData.make} ${mockData.model}`,
+        description: `Details retrieved for ${data.year} ${data.make} ${data.model}`,
       });
-    }, 1500);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Could not retrieve vehicle data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -598,4 +545,4 @@ export default function VehicleLookup() {
       )}
     </div>
   );
-}
+                    }
