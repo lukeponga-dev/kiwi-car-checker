@@ -1,4 +1,6 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,61 +15,37 @@ serve(async (req) => {
 
   const { plateNumber } = await req.json();
 
-  const mockData = {
-    plate: plateNumber.toUpperCase(),
-    make: "Toyota",
-    model: "Camry",
-    variant: "LE",
-    year: 2019,
-    color: "Silver",
-    vin: "1NXBR32E37Z******",
-    chassisNumber: "JTDKB20U597******",
-    countryOfOrigin: "Japan",
-    vehicleType: "Passenger Car",
-    bodyStyle: "Sedan",
-    numberOfDoors: 4,
-    transmission: "Automatic",
-    driveType: "FWD",
-    engineSize: "2.5L",
-    fuelType: "Petrol",
-    numberOfCylinders: 4,
-    powerOutput: "131kW / 176HP",
-    torque: "231Nm",
-    emissionStandard: "Euro 6",
-    fuelConsumption: "7.2L/100km",
-    co2Emissions: "164g/km",
-    maxSpeed: "200km/h",
-    grossVehicleMass: "1,800kg",
-    tareWeight: "1,445kg",
-    registrationStatus: "Current",
-    registrationExpiry: "2024-08-20",
-    wofStatus: "Current",
-    wofExpiry: "2024-06-15",
-    cofStatus: "N/A",
-    rucStatus: "Exempt",
-    importComplianceDate: "2019-01-15",
-    compliancePlate: "NZ COMPLIANCE PLATE",
-    safetyRating: "5 Star ANCAP",
-    airbagCount: 8,
-    hasABS: true,
-    hasESC: true,
-    activeRecalls: [],
-    theftAlertStatus: "Clear",
-    numberOfOwners: 2,
-    firstRegistrationDate: "2019-02-01",
-    importDate: "2019-01-10",
-    previousCountry: "Japan",
-    lienInformation: "None",
-    lastOdometerReading: "87,450km (2024-02-10)",
-    writeOffStatus: "Clear",
-    marketValuation: "$28,000 - $32,000",
-    replacementCost: "$35,000",
-    modificationApprovals: [],
-    noiseLevelCompliance: "Compliant",
-    commercialRestrictions: "None",
-  };
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    {
+      global: {
+        headers: { Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
+      },
+    }
+  );
 
-  return new Response(JSON.stringify(mockData), {
+  const { data: vehicle, error } = await supabase
+    .from("vehicles")
+    .select("*")
+    .eq("plate", plateNumber.toUpperCase())
+    .single();
+
+  if (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
+  }
+
+  if (!vehicle) {
+    return new Response(JSON.stringify({ error: "Vehicle not found" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 404,
+    });
+  }
+
+  return new Response(JSON.stringify(vehicle), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
     status: 200,
   });
